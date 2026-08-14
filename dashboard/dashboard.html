@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Northlight Analytics — Revenue &amp; Churn</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb; --page-plane: #f7f9f8; --text-primary: #0b0b0b;
+    --text-secondary: #52514e; --text-muted: #898781; --grid: #e1e0d9; --baseline: #c3c2b7;
+    --border: rgba(11,11,11,0.10); --good: #006300; --bad: #d03b3b;
+    --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4; --s6: #008300; --s7: #4a3aa7;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page-plane); color: var(--text-primary); font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 28px 24px 64px; }
+  header.page-head { display:flex; justify-content:space-between; align-items:flex-end; margin-bottom: 22px; flex-wrap: wrap; gap: 12px; }
+  header.page-head h1 { font-size: 21px; margin: 0 0 4px; letter-spacing: -0.01em; }
+  header.page-head p { margin: 0; color: var(--text-secondary); font-size: 13px; }
+  .asof { font-size: 12px; color: var(--text-muted); text-align:right; }
+  .kpi-row { display:grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 22px; }
+  .kpi-card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .kpi-card .label { font-size: 11px; color: var(--text-secondary); margin-bottom: 6px; }
+  .kpi-card .value { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; }
+  .grid-2 { display:grid; grid-template-columns: 1.4fr 1fr; gap: 14px; margin-bottom: 14px; }
+  .grid-3 { display:grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 14px; }
+  figure.chart-card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px 12px; margin: 0; }
+  figure.chart-card .chart-head { display:flex; justify-content:space-between; align-items:baseline; margin-bottom: 10px; }
+  figure.chart-card h2 { font-size: 13px; font-weight: 600; margin: 0; }
+  figure.chart-card .insight { font-size: 11.5px; color: var(--text-secondary); margin: 2px 0 0; max-width: 62ch; }
+  .table-toggle { font-size: 11px; color: var(--text-secondary); background: none; border: 1px solid var(--border); border-radius: 6px; padding: 3px 8px; cursor: pointer; white-space: nowrap; }
+  .table-toggle:hover { background: var(--page-plane); }
+  .legend { display:flex; gap: 14px; flex-wrap: wrap; margin: 8px 0 0; font-size: 11.5px; color: var(--text-secondary); }
+  .legend .item { display:flex; align-items:center; gap: 6px; }
+  .legend .swatch { width: 10px; height: 10px; border-radius: 2px; display:inline-block; }
+  svg text { fill: var(--text-muted); font-size: 10.5px; font-family: system-ui, sans-serif; }
+  .bar-label { fill: var(--text-primary) !important; font-size: 11px !important; }
+  .gridline { stroke: var(--grid); stroke-width: 1; }
+  .axis-line { stroke: var(--baseline); stroke-width: 1; }
+  .tooltip { position: absolute; pointer-events:none; background: #232320; color: #fff; font-size: 11.5px; padding: 6px 10px; border-radius: 6px; line-height: 1.5; opacity: 0; transition: opacity .08s; z-index: 10; white-space: nowrap; }
+  table.data-table { width:100%; border-collapse: collapse; font-size: 12px; margin-top: 8px; display:none; }
+  table.data-table.show { display: table; }
+  table.data-table th, table.data-table td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--grid); }
+  table.data-table th { color: var(--text-secondary); font-weight: 600; }
+  .chart-svg-wrap.hide { display:none; }
+  footer.foot { margin-top: 28px; font-size: 11.5px; color: var(--text-muted); border-top: 1px solid var(--border); padding-top: 12px; }
+  @media (max-width: 880px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="viz-root">
+<div class="wrap">
+
+  <header class="page-head">
+    <div>
+      <h1>Northlight Analytics — Revenue &amp; Churn</h1>
+      <p>B2B SaaS · Jan 2022 – Jul 2026</p>
+    </div>
+    <div class="asof">Data as of 31 Jul 2026 · SQLite → Power BI pipeline</div>
+  </header>
+
+  <div class="kpi-row" id="kpiRow"></div>
+
+  <div class="grid-2">
+    <figure class="chart-card">
+      <div class="chart-head">
+        <div><h2>MRR growth</h2>
+        <p class="insight">From £3.8k to £272k monthly recurring revenue over 4.5 years — accelerating, not linear.</p></div>
+        <button class="table-toggle" data-target="t-mrr">View as table</button>
+      </div>
+      <div class="chart-svg-wrap" id="c-mrr"></div>
+      <table class="data-table" id="t-mrr"></table>
+    </figure>
+
+    <figure class="chart-card">
+      <div class="chart-head">
+        <div><h2>MRR movement — June 2026</h2>
+        <p class="insight">New logos are still the biggest driver of growth, but expansion is a close second.</p></div>
+        <button class="table-toggle" data-target="t-waterfall">View as table</button>
+      </div>
+      <div class="chart-svg-wrap" id="c-waterfall"></div>
+      <table class="data-table" id="t-waterfall"></table>
+    </figure>
+  </div>
+
+  <div class="grid-3">
+    <figure class="chart-card">
+      <div class="chart-head"><div><h2>Logo churn rate trend</h2></div><button class="table-toggle" data-target="t-churn">Table</button></div>
+      <div class="chart-svg-wrap" id="c-churn"></div>
+      <table class="data-table" id="t-churn"></table>
+    </figure>
+    <figure class="chart-card">
+      <div class="chart-head"><div><h2>Plan mix (current)</h2></div><button class="table-toggle" data-target="t-plan">Table</button></div>
+      <div class="chart-svg-wrap" id="c-plan"></div>
+      <table class="data-table" id="t-plan"></table>
+    </figure>
+    <figure class="chart-card">
+      <div class="chart-head"><div><h2>Churn rate by channel</h2></div><button class="table-toggle" data-target="t-channel">Table</button></div>
+      <div class="chart-svg-wrap" id="c-channel"></div>
+      <table class="data-table" id="t-channel"></table>
+    </figure>
+  </div>
+
+  <figure class="chart-card" style="margin-bottom:14px;">
+    <div class="chart-head">
+      <div><h2>MRR by industry (current)</h2>
+      <p class="insight">SaaS/Software and E-commerce customers make up the largest share of revenue.</p></div>
+      <button class="table-toggle" data-target="t-industry">View as table</button>
+    </div>
+    <div class="chart-svg-wrap" id="c-industry"></div>
+    <table class="data-table" id="t-industry"></table>
+  </figure>
+
+  <footer class="foot">
+    Synthetic dataset generated for portfolio purposes — Northlight Analytics is a fictitious company. Backing SQL and Power BI build guide in the same project folder. Built by Mohammad Waris.
+  </footer>
+
+</div>
+</div>
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+const DATA = {"mrr_trend": [{"period": "2022-01", "mrr": 3787.0, "accounts": 15}, {"period": "2022-02", "mrr": 5177.0, "accounts": 25}, {"period": "2022-03", "mrr": 6016.0, "accounts": 36}, {"period": "2022-04", "mrr": 8952.0, "accounts": 50}, {"period": "2022-05", "mrr": 10989.0, "accounts": 63}, {"period": "2022-06", "mrr": 13723.0, "accounts": 79}, {"period": "2022-07", "mrr": 17462.0, "accounts": 91}, {"period": "2022-08", "mrr": 20296.0, "accounts": 107}, {"period": "2022-09", "mrr": 22234.0, "accounts": 120}, {"period": "2022-10", "mrr": 23619.0, "accounts": 135}, {"period": "2022-11", "mrr": 28854.0, "accounts": 152}, {"period": "2022-12", "mrr": 31044.0, "accounts": 162}, {"period": "2023-01", "mrr": 34590.0, "accounts": 168}, {"period": "2023-02", "mrr": 41428.0, "accounts": 185}, {"period": "2023-03", "mrr": 46266.0, "accounts": 200}, {"period": "2023-04", "mrr": 48752.0, "accounts": 214}, {"period": "2023-05", "mrr": 53084.0, "accounts": 234}, {"period": "2023-06", "mrr": 55167.0, "accounts": 251}, {"period": "2023-07", "mrr": 59103.0, "accounts": 265}, {"period": "2023-08", "mrr": 62478.0, "accounts": 290}, {"period": "2023-09", "mrr": 65513.0, "accounts": 305}, {"period": "2023-10", "mrr": 68449.0, "accounts": 320}, {"period": "2023-11", "mrr": 74626.0, "accounts": 345}, {"period": "2023-12", "mrr": 79017.0, "accounts": 355}, {"period": "2024-01", "mrr": 79864.0, "accounts": 358}, {"period": "2024-02", "mrr": 81504.0, "accounts": 368}, {"period": "2024-03", "mrr": 84139.0, "accounts": 384}, {"period": "2024-04", "mrr": 96425.0, "accounts": 413}, {"period": "2024-05", "mrr": 97196.0, "accounts": 420}, {"period": "2024-06", "mrr": 101130.0, "accounts": 437}, {"period": "2024-07", "mrr": 108415.0, "accounts": 456}, {"period": "2024-08", "mrr": 114104.0, "accounts": 471}, {"period": "2024-09", "mrr": 117084.0, "accounts": 499}, {"period": "2024-10", "mrr": 127607.0, "accounts": 513}, {"period": "2024-11", "mrr": 135259.0, "accounts": 535}, {"period": "2024-12", "mrr": 139071.0, "accounts": 545}, {"period": "2025-01", "mrr": 140122.0, "accounts": 553}, {"period": "2025-02", "mrr": 144673.0, "accounts": 565}, {"period": "2025-03", "mrr": 153089.0, "accounts": 593}, {"period": "2025-04", "mrr": 159809.0, "accounts": 598}, {"period": "2025-05", "mrr": 169237.0, "accounts": 625}, {"period": "2025-06", "mrr": 175123.0, "accounts": 642}, {"period": "2025-07", "mrr": 181630.0, "accounts": 666}, {"period": "2025-08", "mrr": 191435.0, "accounts": 704}, {"period": "2025-09", "mrr": 201056.0, "accounts": 728}, {"period": "2025-10", "mrr": 208011.0, "accounts": 746}, {"period": "2025-11", "mrr": 217841.0, "accounts": 771}, {"period": "2025-12", "mrr": 224343.0, "accounts": 782}, {"period": "2026-01", "mrr": 226879.0, "accounts": 786}, {"period": "2026-02", "mrr": 238260.0, "accounts": 800}, {"period": "2026-03", "mrr": 246563.0, "accounts": 821}, {"period": "2026-04", "mrr": 251886.0, "accounts": 841}, {"period": "2026-05", "mrr": 254691.0, "accounts": 857}, {"period": "2026-06", "mrr": 263901.0, "accounts": 882}, {"period": "2026-07", "mrr": 272236.0, "accounts": 911}], "waterfall_latest": [{"movement_type": "Churned", "mrr_delta": -3506.0}, {"movement_type": "Contraction", "mrr_delta": -940.0}, {"movement_type": "Expansion", "mrr_delta": 4924.0}, {"movement_type": "New", "mrr_delta": 8039.0}, {"movement_type": "Reactivation", "mrr_delta": 693.0}], "churn_trend": [{"period": "2022-01", "logo_churn_rate_pct": 0.0}, {"period": "2022-02", "logo_churn_rate_pct": 8.0}, {"period": "2022-03", "logo_churn_rate_pct": 5.56}, {"period": "2022-04", "logo_churn_rate_pct": 0.0}, {"period": "2022-05", "logo_churn_rate_pct": 3.17}, {"period": "2022-06", "logo_churn_rate_pct": 2.53}, {"period": "2022-07", "logo_churn_rate_pct": 2.2}, {"period": "2022-08", "logo_churn_rate_pct": 2.8}, {"period": "2022-09", "logo_churn_rate_pct": 2.5}, {"period": "2022-10", "logo_churn_rate_pct": 3.7}, {"period": "2022-11", "logo_churn_rate_pct": 1.97}, {"period": "2022-12", "logo_churn_rate_pct": 4.32}, {"period": "2023-01", "logo_churn_rate_pct": 4.17}, {"period": "2023-02", "logo_churn_rate_pct": 1.08}, {"period": "2023-03", "logo_churn_rate_pct": 4.5}, {"period": "2023-04", "logo_churn_rate_pct": 3.74}, {"period": "2023-05", "logo_churn_rate_pct": 3.42}, {"period": "2023-06", "logo_churn_rate_pct": 2.79}, {"period": "2023-07", "logo_churn_rate_pct": 3.77}, {"period": "2023-08", "logo_churn_rate_pct": 3.1}, {"period": "2023-09", "logo_churn_rate_pct": 1.97}, {"period": "2023-10", "logo_churn_rate_pct": 2.5}, {"period": "2023-11", "logo_churn_rate_pct": 2.03}, {"period": "2023-12", "logo_churn_rate_pct": 3.66}, {"period": "2024-01", "logo_churn_rate_pct": 4.75}, {"period": "2024-02", "logo_churn_rate_pct": 2.99}, {"period": "2024-03", "logo_churn_rate_pct": 4.69}, {"period": "2024-04", "logo_churn_rate_pct": 1.69}, {"period": "2024-05", "logo_churn_rate_pct": 4.05}, {"period": "2024-06", "logo_churn_rate_pct": 3.2}, {"period": "2024-07", "logo_churn_rate_pct": 3.51}, {"period": "2024-08", "logo_churn_rate_pct": 5.1}, {"period": "2024-09", "logo_churn_rate_pct": 2.2}, {"period": "2024-10", "logo_churn_rate_pct": 2.73}, {"period": "2024-11", "logo_churn_rate_pct": 2.8}, {"period": "2024-12", "logo_churn_rate_pct": 2.94}, {"period": "2025-01", "logo_churn_rate_pct": 2.89}, {"period": "2025-02", "logo_churn_rate_pct": 3.01}, {"period": "2025-03", "logo_churn_rate_pct": 2.19}, {"period": "2025-04", "logo_churn_rate_pct": 4.35}, {"period": "2025-05", "logo_churn_rate_pct": 3.2}, {"period": "2025-06", "logo_churn_rate_pct": 3.12}, {"period": "2025-07", "logo_churn_rate_pct": 2.25}, {"period": "2025-08", "logo_churn_rate_pct": 2.56}, {"period": "2025-09", "logo_churn_rate_pct": 2.61}, {"period": "2025-10", "logo_churn_rate_pct": 2.95}, {"period": "2025-11", "logo_churn_rate_pct": 2.59}, {"period": "2025-12", "logo_churn_rate_pct": 2.81}, {"period": "2026-01", "logo_churn_rate_pct": 3.05}, {"period": "2026-02", "logo_churn_rate_pct": 3.0}, {"period": "2026-03", "logo_churn_rate_pct": 2.68}, {"period": "2026-04", "logo_churn_rate_pct": 3.8}, {"period": "2026-05", "logo_churn_rate_pct": 2.92}, {"period": "2026-06", "logo_churn_rate_pct": 2.83}, {"period": "2026-07", "logo_churn_rate_pct": 2.63}], "plan_mix_latest": [{"plan_name": "Starter", "accounts": 329, "mrr": 16121.0}, {"plan_name": "Growth", "accounts": 292, "mrr": 49348.0}, {"plan_name": "Scale", "accounts": 183, "mrr": 73017.0}, {"plan_name": "Enterprise", "accounts": 107, "mrr": 133750.0}], "channel_churn": [{"acquisition_channel": "Self-serve: Paid Search", "total_signups": 303, "churned": 147, "churn_rate_pct": 48.5}, {"acquisition_channel": "Sales-assisted: Partner", "total_signups": 223, "churned": 102, "churn_rate_pct": 45.7}, {"acquisition_channel": "Sales-assisted: Outbound", "total_signups": 323, "churned": 147, "churn_rate_pct": 45.5}, {"acquisition_channel": "Self-serve: Organic", "total_signups": 435, "churned": 195, "churn_rate_pct": 44.8}, {"acquisition_channel": "Self-serve: Referral", "total_signups": 267, "churned": 118, "churn_rate_pct": 44.2}], "industry_mrr": [{"industry": "SaaS / Software", "mrr": 62680.0}, {"industry": "E-commerce", "mrr": 39405.0}, {"industry": "Professional Services", "mrr": 33616.0}, {"industry": "Financial Services", "mrr": 22902.0}, {"industry": "Media & Publishing", "mrr": 21138.0}, {"industry": "Manufacturing", "mrr": 18525.0}, {"industry": "Healthcare", "mrr": 17860.0}, {"industry": "Education", "mrr": 16676.0}], "overall": {"mrr": 272236.0, "arr": 3266832.0, "accounts": 911, "nrr_pct": 102.6, "arpa": 298.83}, "waterfall_context": {"start_mrr": 254691.0, "end_mrr": 263901.0, "start_label": "May 2026 MRR", "end_label": "Jun 2026 MRR"}};
+const gbp = (v) => '£' + Math.round(v).toLocaleString('en-GB');
+const gbpk = (v) => '£' + (v/1000).toFixed(0) + 'k';
+const pct = (v) => v.toFixed(1) + '%';
+const num = (v) => v.toLocaleString('en-GB');
+
+const tooltip = document.getElementById('tooltip');
+function showTooltip(evt, html) { tooltip.innerHTML = html; tooltip.style.opacity = 1; tooltip.style.left = (evt.pageX+14)+'px'; tooltip.style.top = (evt.pageY-10)+'px'; }
+function hideTooltip() { tooltip.style.opacity = 0; }
+
+function renderKPIs() {
+  const o = DATA.overall;
+  const cards = [
+    ['MRR', gbp(o.mrr)], ['ARR (run rate)', gbp(o.arr)], ['Active accounts', num(o.accounts)],
+    ['Net revenue retention', o.nrr_pct + '%'], ['ARPA', gbp(o.arpa)],
+  ];
+  document.getElementById('kpiRow').innerHTML = cards.map(([l,v]) => `<div class="kpi-card"><div class="label">${l}</div><div class="value">${v}</div></div>`).join('');
+}
+
+function renderLine(containerId, tableId, rows, xKey, yKey, yFmt, color) {
+  const container = document.getElementById(containerId);
+  const w = container.clientWidth || 560, h = 220, padL = 46, padR = 12, padT = 10, padB = 26;
+  const maxV = Math.max(...rows.map(r=>r[yKey])) * 1.08;
+  const minV = Math.min(0, Math.min(...rows.map(r=>r[yKey])) * 0.96);
+  const x = (i) => padL + i/(rows.length-1) * (w-padL-padR);
+  const y = (v) => padT + (1 - (v-minV)/(maxV-minV)) * (h-padT-padB);
+  let svg = `<svg width="100%" viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMinYMin meet">`;
+  for (let i=0;i<=3;i++){ const gy = padT+i/3*(h-padT-padB); svg += `<line x1="${padL}" y1="${gy}" x2="${w-padR}" y2="${gy}" class="gridline"/>`; svg += `<text x="${padL-6}" y="${gy+3}" text-anchor="end">${yFmt(maxV-(maxV-minV)*i/3)}</text>`; }
+  const step = Math.ceil(rows.length/8);
+  rows.forEach((r,i) => { if (i % step === 0) svg += `<text x="${x(i)}" y="${h-8}" text-anchor="middle">${r[xKey].slice(2)}</text>`; });
+  const pts = rows.map((r,i) => `${x(i)},${y(r[yKey])}`).join(' ');
+  svg += `<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+  rows.forEach((r,i) => { if (i % 2 === 0) svg += `<circle cx="${x(i)}" cy="${y(r[yKey])}" r="2.5" fill="${color}" class="pt" data-x="${r[xKey]}" data-y="${r[yKey]}"/>`; });
+  svg += `<line x1="${padL}" y1="${y(0)}" x2="${w-padR}" y2="${y(0)}" class="axis-line"/></svg>`;
+  container.innerHTML = svg;
+  container.querySelectorAll('.pt').forEach(pt => {
+    pt.addEventListener('mousemove', e => showTooltip(e, `<strong>${pt.dataset.x}</strong><br>${yFmt(+pt.dataset.y)}`));
+    pt.addEventListener('mouseleave', hideTooltip);
+  });
+  const table = document.getElementById(tableId);
+  table.innerHTML = '<tr><th>Period</th><th>Value</th></tr>' + rows.map(r=>`<tr><td>${r[xKey]}</td><td>${yFmt(r[yKey])}</td></tr>`).join('');
+}
+
+function renderBarChart(containerId, tableId, rows, labelKey, valueKey, colorFn, valueFmt) {
+  const container = document.getElementById(containerId);
+  const w = container.clientWidth || 500;
+  const barH = 20, gap = 11, padL = 140, padR = 55, padT = 6;
+  const h = rows.length * (barH + gap) + padT;
+  const maxV = Math.max(...rows.map(r => Math.abs(r[valueKey]))) * 1.15;
+  const x = (v) => padL + (v / maxV) * (w - padL - padR);
+  let svg = `<svg width="100%" viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMinYMin meet">`;
+  rows.forEach((r, i) => {
+    const yPos = padT + i * (barH + gap);
+    const bw = x(r[valueKey]) - padL;
+    svg += `<text x="${padL - 8}" y="${yPos + barH/2 + 4}" text-anchor="end" class="bar-label">${r[labelKey]}</text>`;
+    svg += `<rect x="${padL}" y="${yPos}" width="${Math.max(bw,2)}" height="${barH}" rx="4" fill="${colorFn(r,i)}" class="bar" data-label="${r[labelKey]}" data-val="${r[valueKey]}"/>`;
+    svg += `<text x="${x(r[valueKey]) + 6}" y="${yPos + barH/2 + 4}" class="bar-label">${valueFmt(r[valueKey])}</text>`;
+  });
+  svg += `</svg>`;
+  container.innerHTML = svg;
+  container.querySelectorAll('.bar').forEach(bar => {
+    bar.addEventListener('mousemove', e => showTooltip(e, `<strong>${bar.dataset.label}</strong><br>${valueFmt(+bar.dataset.val)}`));
+    bar.addEventListener('mouseenter', () => bar.style.opacity = 0.85);
+    bar.addEventListener('mouseleave', () => { bar.style.opacity = 1; hideTooltip(); });
+  });
+  const table = document.getElementById(tableId);
+  const otherKeys = Object.keys(rows[0]).filter(k => k !== labelKey && k !== valueKey);
+  table.innerHTML = '<tr><th>'+labelKey+'</th><th>'+valueKey+'</th>' + otherKeys.map(k=>`<th>${k}</th>`).join('') + '</tr>' +
+    rows.map(r => '<tr><td>'+r[labelKey]+'</td><td>'+valueFmt(r[valueKey])+'</td>' + otherKeys.map(k=>`<td>${r[k]}</td>`).join('') + '</tr>').join('');
+}
+
+// ---------- Waterfall chart ----------
+function renderWaterfall() {
+  const container = document.getElementById('c-waterfall');
+  const ctx = DATA.waterfall_context;
+  const order = ['New','Expansion','Reactivation','Contraction','Churned'];
+  const steps = [{ label: ctx.start_label, value: ctx.start_mrr, type: 'total' }];
+  order.forEach(t => { const row = DATA.waterfall_latest.find(r=>r.movement_type===t); if (row) steps.push({ label: t, value: row.mrr_delta, type: row.mrr_delta >= 0 ? 'increase' : 'decrease' }); });
+  steps.push({ label: ctx.end_label, value: ctx.end_mrr, type: 'total' });
+
+  let running = 0;
+  const bars = steps.map(s => {
+    if (s.type === 'total') { const b = { ...s, base: 0, top: s.value }; running = s.value; return b; }
+    const base = Math.min(running, running + s.value);
+    const top = Math.max(running, running + s.value);
+    running += s.value;
+    return { ...s, base, top };
+  });
+
+  const w = container.clientWidth || 500, h = 230, padL = 50, padR = 10, padT = 14, padB = 50;
+  const maxV = Math.max(...bars.map(b=>b.top)) * 1.08;
+  const barW = (w-padL-padR) / bars.length * 0.6;
+  const step = (w-padL-padR) / bars.length;
+  const y = (v) => padT + (1 - v/maxV) * (h-padT-padB);
+  const colors = { total: 'var(--s1)', increase: 'var(--s3)', decrease: 'var(--bad)' };
+
+  let svg = `<svg width="100%" viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMinYMin meet">`;
+  for (let i=0;i<=3;i++){ const gy = padT+i/3*(h-padT-padB); svg += `<line x1="${padL}" y1="${gy}" x2="${w-padR}" y2="${gy}" class="gridline"/>`; svg += `<text x="${padL-6}" y="${gy+3}" text-anchor="end">${gbpk(maxV*(1-i/3))}</text>`; }
+  bars.forEach((b,i) => {
+    const cx = padL + i*step + step/2;
+    const bh = Math.max(y(b.base) - y(b.top), 2);
+    svg += `<rect x="${cx-barW/2}" y="${y(b.top)}" width="${barW}" height="${bh}" rx="3" fill="${colors[b.type]}" class="wbar" data-label="${b.label}" data-val="${b.value}"/>`;
+    svg += `<text x="${cx}" y="${h-32}" text-anchor="end" transform="rotate(-30 ${cx} ${h-32})" style="font-size:9.5px;">${b.label}</text>`;
+    if (i < bars.length-1 && bars[i+1].type !== 'total') { svg += `<line x1="${cx+barW/2}" y1="${y(b.top)}" x2="${cx+step-barW/2}" y2="${y(b.top)}" stroke="var(--baseline)" stroke-dasharray="2,2"/>`; }
+  });
+  svg += `</svg>`;
+  container.innerHTML = svg;
+
+  container.querySelectorAll('.wbar').forEach(bar => {
+    bar.addEventListener('mousemove', e => showTooltip(e, `<strong>${bar.dataset.label}</strong><br>${gbp(+bar.dataset.val)}`));
+    bar.addEventListener('mouseleave', hideTooltip);
+  });
+  const table = document.getElementById('t-waterfall');
+  table.innerHTML = '<tr><th>Step</th><th>Value</th></tr>' + bars.map(b=>`<tr><td>${b.label}</td><td>${gbp(b.value)}</td></tr>`).join('');
+}
+
+function wireToggles() {
+  document.querySelectorAll('.table-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const table = document.getElementById(btn.dataset.target);
+      table.classList.toggle('show');
+      const chartWrap = btn.closest('figure').querySelector('.chart-svg-wrap');
+      if (table.classList.contains('show')) { chartWrap.classList.add('hide'); btn.textContent = btn.textContent.replace('View as table','Show chart').replace('Table','Chart'); }
+      else { chartWrap.classList.remove('hide'); btn.textContent = btn.textContent.replace('Show chart','View as table').replace('Chart','Table'); }
+    });
+  });
+}
+
+renderKPIs();
+renderLine('c-mrr', 't-mrr', DATA.mrr_trend, 'period', 'mrr', gbp, 'var(--s1)');
+renderWaterfall();
+renderLine('c-churn', 't-churn', DATA.churn_trend, 'period', 'logo_churn_rate_pct', pct, 'var(--bad)');
+renderBarChart('c-plan', 't-plan', DATA.plan_mix_latest, 'plan_name', 'mrr', (r,i)=>['var(--s1)','var(--s2)','var(--s3)','var(--s4)'][i], gbp);
+renderBarChart('c-channel', 't-channel', DATA.channel_churn, 'acquisition_channel', 'churn_rate_pct', ()=>'var(--s5)', pct);
+renderBarChart('c-industry', 't-industry', DATA.industry_mrr, 'industry', 'mrr', (r,i)=>['var(--s1)','var(--s2)','var(--s3)','var(--s4)','var(--s5)','var(--s6)','var(--s7)','var(--s2)'][i], gbp);
+wireToggles();
+</script>
+</body>
+</html>
