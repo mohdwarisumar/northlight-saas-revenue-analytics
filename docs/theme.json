@@ -1,0 +1,29 @@
+{
+  "name": "Northlight Analytics",
+  "dataColors": [
+    "#1F6F6B",
+    "#4A4E9C",
+    "#4F918C",
+    "#7472B8",
+    "#2E5653",
+    "#5D5AA8",
+    "#8CB8B5",
+    "#A6A4D6"
+  ],
+  "background": "#FAFCFB",
+  "foreground": "#1B2422",
+  "tableAccent": "#1F6F6B",
+  "good": "#1F6F6B",
+  "bad": "#B24A3E",
+  "neutral": "#4A4E9C",
+  "maximum": "#1F6F6B",
+  "center": "#D8E3E1",
+  "minimum": "#FAFCFB",
+  "null": "#C7CECF",
+  "textClasses": {
+    "callout": { "fontSize": 32, "fontFace": "Segoe UI Semibold" },
+    "title": { "fontSize": 14, "fontFace": "Segoe UI Semibold", "color": "#1B2422" },
+    "header": { "fontSize": 12, "fontFace": "Segoe UI", "color": "#1B2422" },
+    "label": { "fontSize": 10, "fontFace": "Segoe UI", "color": "#57605D" }
+  }
+}
